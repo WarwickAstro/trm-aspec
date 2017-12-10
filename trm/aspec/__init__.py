@@ -1,12 +1,11 @@
 #!/usr/bin/env python
 
-"""
-package to compute amplitude spectra.
+"""package to compute amplitude spectra.
 
-astropy.stats.lombscargle computes various forms of Lomb-Scargle
-spectra but not amplitude spectra which I tend to find more informative.
-It uses the astropy.stats.lombscargle code to calculate the various sums
-in an efficient manner.
+astropy.stats.lombscargle computes various forms of Lomb-Scargle spectra but
+not amplitude spectra which I tend to find more informative. trm.aspec uses
+the astropy.stats.lombscargle code to calculate the various trig sums in an
+efficient manner but calculates amplitude spectra instead.
 
 There is a single function. Here is example usage::
 
@@ -30,6 +29,7 @@ There is a single function. Here is example usage::
 
   # Compute the amplitude spectrum
   fqs, amps = amp_spec(t, y, ye, f0, df, Nf)
+
 """
 
 import numpy as np
