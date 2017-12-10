@@ -1,5 +1,37 @@
 #!/usr/bin/env python
 
+"""
+package to compute amplitude spectra.
+
+astropy.stats.lombscargle computes various forms of Lomb-Scargle
+spectra but not amplitude spectra which I tend to find more informative.
+It uses the astropy.stats.lombscargle code to calculate the various sums
+in an efficient manner.
+
+There is a single function. Here is example usage::
+
+  from trm.aspec import amp_spec
+
+  # Generate some non-uniformly spaced X values
+  t = np.random.uniform(0,1000.,1000)
+
+  # Equivalent y values (single sinusoid, amplitude
+  # 0.15, frequency 0.1 cycles/unit time.
+  f,a,c,phi,sigma = 0.1, 0.15, 0.1, 2., 0.02
+  y = c + a*np.sin(2.*np.pi*f*t+phi)
+
+  # Add a little noise
+  y = np.random.normal(y,sigma)
+  ye = sigma*np.ones_like(y)
+
+  # Define frequencies
+  over = 10 # oversampling factor
+  f0, df, Nf = 0.075, 1/(t.max()-t.min())/2/over, 1000
+
+  # Compute the amplitude spectrum
+  fqs, amps = amp_spec(t, y, ye, f0, df, Nf)
+"""
+
 import numpy as np
 
 from astropy.stats.lombscargle.implementations.utils import trig_sum
