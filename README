@@ -1,0 +1,21 @@
+
+'trm.aspec' is, I hope, a temporary measure to compute amplitude spectra
+using code modified from Jake Vanderplas' lombscargle package. It exposes
+a single function, amp_spec, to do this. I am hoping that Jake Vanderplas
+will add something equivalent as an option in lombscargle, but in the
+meantime, this does the job.
+
+Installation:
+
+You need numpy and a recent enough astropy to have astropy.stats.lombscargle
+Then its just the usual
+
+ python setup.py install --prefix=your_top_level_installation_directory
+
+or
+
+ python setup.py install --user
+
+if you want store in .local in your home directory.
+
+Tom Marsh
