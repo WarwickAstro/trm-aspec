@@ -66,8 +66,10 @@ def amp_spec(t, y, ye, f0, df, Nf, use_fft=True):
         The frequencies have units of cycles per unit time, according on
         the units of "t". The amplitudes have the same units as y.
 
-    Typically "df" the frequency spacing should be a similar order of
-    magnitude to 1
+    Typically "df" the frequency spacing should be less than 0.5 divided by
+    the baseline of the data. i.e. For measurements that span 100 days, one
+    might set df = 0.001 to somewhat oversample. Be very careful not to
+    undersample in frequency since you could end up missing peaks entirely.
     """
 
     if ye is None:
