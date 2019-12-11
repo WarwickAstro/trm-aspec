@@ -34,7 +34,7 @@ There is a single function. Here is example usage::
 
 import numpy as np
 
-from astropy.stats.lombscargle.implementations.utils import trig_sum
+from astropy.timeseries.periodograms.lombscargle.implementations.utils import trig_sum
 
 def amp_spec(t, y, ye, f0, df, Nf, use_fft=True):
 
