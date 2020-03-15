@@ -35,41 +35,49 @@ There is a single function. Here is example usage::
 import numpy as np
 
 from astropy.timeseries.periodograms.lombscargle.implementations.utils import trig_sum
+from astropy.timeseries import LombScargle
 
-def amp_spec(t, y, ye, f0, df, Nf, use_fft=True):
+def amp_spec(t, y, ye, f=None, samples_per_peak=5, nyquist_factor=5, 
+             minimum_frequency=None, maximum_frequency=None, use_fft=True):
 
     """Fast computation of amplitude spectra adapted from code from
-    Vanderplas' fast Lomb-Scargle implementation.
+    Vanderplas's fast Lomb-Scargle implementation in
+    astropy.timeseries.Lombscargle
 
-    This implements the Press & Rybicki method [1]_ for fast O[N log(N)]
-    Lomb-Scargle trig sums (if use_fft).
+    This implements the Press & Rybicki method [1]_ for fast
+    O[N log(N)] Lomb-Scargle trig sums (if use_fft). Look at
+    LombScargle.autofrequency for setting of frequency grid.
 
     Parameters
     ----------
     t, y, ye : array_like
         times, values, and errors of the data points. These should be
-        broadcastable to the same shape.
-
-    f0, df, Nf : (float, float, int)
-        parameters describing the (regular) frequency grid,
-        f = f0 + df * arange(Nf). The frequencies are measured in
-        cycles per unit t.
-
+        broadcastable to the same 1D array length.
+    f : None or array
+        Either an array of frequencies (regularly spaced) or None to generate
+        automatically using next parameters
+    samples_per_peak : float (optional, default=5)
+        The approximate number of desired samples across the typical peak
+    nyquist_factor : float (optional, default=5)
+        The multiple of the average nyquist frequency used to choose the
+        maximum frequency if maximum_frequency is not provided.
+    minimum_frequency : float (optional)
+        If specified, then use this minimum frequency rather than one
+        chosen based on the size of the baseline.
+    maximum_frequency : float (optional)
+        If specified, then use this maximum frequency rather than one
+        chosen based on the average nyquist frequency.
     use_fft : bool (default=True)
         If True, then use the Press & Rybicki O[NlogN] algorithm to compute
         the trig sums result. Otherwise, use a slower O[N^2] algorithm.
 
     Returns
     -------
-    freq, amp : ndarray
+    freq, amp : arrays
         Arrays of frequency and amplitude associated with each frequency.
-        The frequencies have units of cycles per unit time, according on
+        The frequencies have units of cycles per unit time, according to
         the units of "t". The amplitudes have the same units as y.
 
-    Typically "df" the frequency spacing should be less than 0.5 divided by
-    the baseline of the data. i.e. For measurements that span 100 days, one
-    might set df = 0.001 to somewhat oversample. Be very careful not to
-    undersample in frequency since you could end up missing peaks entirely.
     """
 
     if ye is None:
@@ -80,13 +88,30 @@ def amp_spec(t, y, ye, f0, df, Nf, use_fft=True):
     if t.ndim != 1:
         raise ValueError("t, y, ye should be one dimensional")
 
-    # Validate and setup frequency grid
-    if f0 < 0:
-        raise ValueError("Frequencies must be positive")
-    if df <= 0:
-        raise ValueError("Frequency steps must be positive")
-    if Nf <= 0:
-        raise ValueError("Number of frequencies must be positive")
+    if f is not None:
+        # checks on frequencies
+        f0 = f.min()
+        Nf = len(f)
+        if f0 <= 0:
+            raise ValueError("Frequencies must be positive")
+
+        step = (f.max()-f.min())/(Nf-1)
+        if step <= 0:
+            raise ValueError("Frequency steps must be positive")
+
+        df = f[1:]-f[:-1]
+        if (df != step).any():
+            raise ValueError("Frequency grid must be regular")
+    else:
+        # compute frequency grid
+        ls = LombScargle(t,y,ye)
+        f = ls.autofrequency(
+            samples_per_peak, nyquist_factor,
+            minimum_frequency, maximum_frequency
+        )
+        f0 = f.min()
+        step = (f.max()-f.min())/(len(f)-1)
+        Nf = len(f)
 
     # Normalised weights
     w = ye ** -2.0
@@ -97,7 +122,7 @@ def amp_spec(t, y, ye, f0, df, Nf, use_fft=True):
     y -= np.dot(w, y)
 
     # set up arguments to trig_sum
-    kwargs = {'f0' : f0, 'df' : df, 'use_fft' : use_fft, 'N' : Nf}
+    kwargs = {'f0' : f0, 'df' : step, 'use_fft' : use_fft, 'N' : Nf}
 
     # ----------------------------------------------------------------------
     # 1. compute functions of the time-shift tau at each frequency
@@ -133,7 +158,7 @@ def amp_spec(t, y, ye, f0, df, Nf, use_fft=True):
 
     amp = np.sqrt( (YC/CC)**2 + (YS/SS)**2 )
 
-    return (f0+df*np.arange(Nf), amp)
+    return (f, amp)
 
 if __name__ == '__main__':
 
@@ -152,12 +177,8 @@ if __name__ == '__main__':
     y = np.random.normal(y,sigma)
     ye = sigma*np.ones_like(y)
 
-    # Define frequencies
-    over = 10 # oversampling factor
-    f0, df, Nf = 0.075, 1/(t.max()-t.min())/2/over, 1000
-
     # Compute the power
-    fqs, amps = amp_spec(t, y, ye, f0, df, Nf)
+    fqs, amps = amp_spec(t, y, ye)
 
     # Plot
     plt.plot(fqs, amps)
